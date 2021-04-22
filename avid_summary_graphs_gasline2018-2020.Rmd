@@ -53,31 +53,22 @@ avid2020 <- data01 %>%
 ```{r}
 
 avid_summ <- avid2020 %>% 
-  #filter(inside_fence == "no") %>% 
   group_by(harvest, inside_fence, species, inside_slash, year) %>% 
-#code to summarize multiple variables
-    summarize_at(
-    vars(ht, basal_area, ground_cov_pct, sub_cov_pct, canopy_cov_pct),
-    list(~mean(.), sd(.))
+ summarize(
+   n = n(),
+   avg_ht = mean(ht),
+   sd_ht = sd(ht),
+   avg_basal = mean(basal_area),
+   sd_basal = sd(basal_area),
+   avg_grdCov = mean(ground_cov_pct),
+   sd_grdCov = sd(ground_cov_pct),
+   avg_subCov = mean(sub_cov_pct),
+   sd_subCov = sd(sub_cov_pct),
+   avg_canCov = mean(canopy_cov_pct),
+   sd_canCov = sd(canopy_cov_pct)
   )
-  
-avid_summ <- avid2020 %>% 
-  group_by(harvest, inside_fence, species, inside_slash, year) %>% 
-  summarise_each(.vars = all_numeric,
-                 .funs = c(mean = "mean"))
 
- #code to summarize just a couple variables 
- # summarize(
-#    avg_ht = mean(ht),
-#    sd_ht = sd(ht),
-#    avg_basal = mean(basal_area),
-#    sd_basal = sd(basal_area),
-#    n = n()
-#  )
 
-summarize_at(
-    vars(lifeExp, gdpPercap), 
-    list(~mean(.), ~median(.)))
 
 view(avid_summ)
 
@@ -92,11 +83,41 @@ view(avid_summ)
 
 ###Visualizing the data
 ```{r}
+
 avid_summ %>% 
   filter(species != "bc" & harvest != "sta_rd") %>% 
 ggplot(aes(x=inside_slash, y = avg_ht, color=year)) +
   geom_point()+
   facet_grid(inside_fence ~ species)
+
+#assessing if basal area associated with seedling ht unfenced
+avid2020 %>% 
+  filter(species != "bc" & harvest != "sta_rd" & inside_fence != "yes") %>% 
+ggplot(aes(x=basal_area, y = ht, color=year)) +
+  geom_point()+
+  facet_grid(inside_slash ~ species)
+
+#outside wall, assessing ground cover on seedling height
+avid2020 %>% 
+  filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
+ggplot(aes(x=ground_cov_pct, y = ht, color=year)) +
+  geom_point()+
+  facet_grid(inside_fence ~ species)
+
+#outside wall, assessing subcanopy cover on seedling height
+avid2020 %>% 
+  filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
+ggplot(aes(x=sub_cov_pct, y = ht, color=year)) +
+  geom_point()+
+  facet_grid(inside_fence ~ species)
+
+#outside wall, assessing canopy cover on seedling height
+avid2020 %>% 
+  filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
+ggplot(aes(x=canopy_cov_pct, y = ht, color=year)) +
+  geom_point()+
+  facet_grid(inside_fence ~ species)
+
 
 ```
 

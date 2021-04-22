@@ -47,6 +47,7 @@ data02 <- raw_data_01 %>%
   mutate_at(
     vars(harvest, inside_slash, inside_fence, plot, species, quad, tag),
     factor) %>% 
+    mutate(inside_fence = recode(inside_fence, "YES" = "yes")) %>%  #old = new
   select(!c(site_name, gps,quad,date2019))
 
 #str(data02)
