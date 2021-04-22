@@ -55,11 +55,29 @@ avid2020 <- data01 %>%
 avid_summ <- avid2020 %>% 
   #filter(inside_fence == "no") %>% 
   group_by(harvest, inside_fence, species, inside_slash, year) %>% 
-  summarize(
-    avg_ht = mean(ht),
-    sd_ht = sd(ht),
-    n = n()
+#code to summarize multiple variables
+    summarize_at(
+    vars(ht, basal_area, ground_cov_pct, sub_cov_pct, canopy_cov_pct),
+    list(~mean(.), sd(.))
   )
+  
+avid_summ <- avid2020 %>% 
+  group_by(harvest, inside_fence, species, inside_slash, year) %>% 
+  summarise_each(.vars = all_numeric,
+                 .funs = c(mean = "mean"))
+
+ #code to summarize just a couple variables 
+ # summarize(
+#    avg_ht = mean(ht),
+#    sd_ht = sd(ht),
+#    avg_basal = mean(basal_area),
+#    sd_basal = sd(basal_area),
+#    n = n()
+#  )
+
+summarize_at(
+    vars(lifeExp, gdpPercap), 
+    list(~mean(.), ~median(.)))
 
 view(avid_summ)
 
@@ -83,7 +101,7 @@ ggplot(aes(x=inside_slash, y = avg_ht, color=year)) +
 ```
 
 
-### codeing factorials
+### coding factorials
 ```{r, factorial}
 
 #the "plot" below of predict(mymod) showed that the variability
@@ -93,23 +111,44 @@ ggplot(aes(x=inside_slash, y = avg_ht, color=year)) +
 mymod <- lm(log(ht) ~ inside_slash * inside_fence * species * year, 
             data=subset(avid2020, species != "bc" & harvest != "sta_rd"))
 
-hist(residuals(mymod))
+hist(residuals(mymod)) 
+#the log transformation made the distribution of residuals more normal
+#note that the x-axis values are essentially -1.5 to 1.5
+#
 plot(predict(mymod),residuals(mymod))
 
 summary(mymod)
 anova(mymod)
 library(emmeans)
 
+#Estimated Marginal Means
 emmeans(mymod,~ inside_slash * inside_fence * species * year, type = "response")
+#using type="response" reverse transforms log(ht)
+#
+#emmip = Estimate Marginal Means Interaction Plot
+#No Fence vs. Yes Fence, and Without vs. With Slash Wall
 emmip(mymod, year ~ inside_slash | species + inside_fence, type = "response", CIs=TRUE)
+
+
+
+#emmip = Estimate Marginal Means Interaction Plot
+#No Fence vs. Yes Fence, and Without vs. With Slash Wall
 emmip(mymod, inside_fence ~ inside_slash | species + year, type = "response", CIs=TRUE)
 
+#pairwise looks at responses of pairs of the variable after the ~
+#pairwise "inside_fence" assesses if the fence matters by slash x species x year
 emmeans(mymod,pairwise ~ inside_fence | inside_slash * species * year, type = "response")
 
 
+#pairwise "inside_slash" assesses if the slash matters by fence x species x year
 emmeans(mymod,pairwise ~ inside_slash | inside_fence * species * year, type = "response")
 
 ```
+```{r}
+
+```
+
+
 
 
 ###Graphs of Seedling Response
