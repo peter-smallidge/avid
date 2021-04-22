@@ -49,7 +49,45 @@ data02 <- raw_data_01 %>%
     factor) %>% 
   select(!c(site_name, gps,quad,date2019))
 
+#str(data02)
 #need to change var=inside_fence for YES to yes
+
+```
+
+###Make the Data Tidy
+```{r, make data tidy}
+
+#create df with heights for only one year
+#use bind_rows(df1, df2) to reaggregate
+
+data2018 <- data02 %>% 
+  select(!c(ht2019.july, ht2020.july)) %>% 
+  rename(ht = ht2018.july) %>% 
+  mutate(
+    year = 2018
+  ) %>% 
+  mutate(ht2018.july = NULL) #this is not needed, the variable name was changed
+
+data2019 <- data02 %>% 
+  select(!c(ht2018.july, ht2020.july)) %>% 
+  rename(ht = ht2019.july) %>% 
+  mutate(
+    year = 2019
+  ) %>% 
+  mutate(ht2019.july = NULL) #this is not needed, the variable name was changed
+
+data2020 <- data02 %>% 
+  select(!c(ht2018.july, ht2019.july)) %>% 
+  rename(ht = ht2020.july) %>% 
+  mutate(
+    year = 2020
+  )
+
+avid_tidy <- 
+  bind_rows(data2018, data2019, data2020)
+
+write_csv(avid_tidy, "tidy_avid_2018-2020_gasline.csv")
+ 
 
 ```
 
