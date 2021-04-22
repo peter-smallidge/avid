@@ -1,0 +1,57 @@
+---
+title: "Untitled"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+<!-- 
+use this code for comments between chunks
+-->
+
+
+```{r, Installing Libraries}
+
+library(tidyverse)
+library(skimr)        ## install.packages("skimr")
+#  dplyr is part of tidyverse -- library(dplyr)
+
+#
+#in console
+#   str(df)
+#   print(df, n=10)
+#   
+#   to make a df into tibble use x1 <- as_tibble(original_df)  
+#   
+#   dim(df) will show dimensions of the df
+#   
+
+
+```
+
+###Read AVID slash wall data
+```{r,read avid slash wall}
+
+library(readxl)
+raw_data_01 <- read_excel("avid_cleaned_gasline_sta_2018-2020.xlsx",
+col_types = c("text", "text", "text",
+"text", "numeric", "text", "text",
+"numeric", "numeric", "numeric",
+"numeric", "text", "text", "numeric",
+"text", "numeric", "numeric"))
+
+data02 <- raw_data_01 %>% 
+  mutate_at(
+    vars(harvest, inside_slash, inside_fence, plot, species, quad, tag),
+    factor) %>% 
+  select(!c(site_name, gps,quad,date2019))
+
+#need to change var=inside_fence for YES to yes
+
+```
+
+
+
