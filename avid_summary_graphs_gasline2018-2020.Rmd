@@ -1,0 +1,126 @@
+---
+title: "AVID summary and graphs"
+author: "Peter Smallidge"
+date: "4/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!-- 
+use this code for comments between chunks
+-->
+
+
+```{r, Installing Libraries}
+
+library(tidyverse)
+library(skimr)        ## install.packages("skimr")
+#  dplyr is part of tidyverse -- library(dplyr)
+
+#
+#in console
+#   str(df)
+#   print(df, n=10)
+#   
+#   to make a df into tibble use x1 <- as_tibble(original_df)  
+#   
+#   dim(df) will show dimensions of the df
+#   
+
+
+```
+
+
+###Read CSV
+```{r}
+
+library(readr)
+data01 <- read_csv("tidy_avid_2018-2020_gasline.csv")
+#missing values were removed from the df.yr files before bind_row
+
+avid2020 <- data01 %>% 
+  mutate_at(
+    vars(harvest, year, inside_slash, inside_fence, plot, species, tag),
+    factor) %>% 
+  mutate(inside_fence = recode(inside_fence, "YES" = "yes")) #old = new
+
+```
+
+###Summary by Groups
+```{r}
+
+avid_summ <- avid2020 %>% 
+  #filter(inside_fence == "no") %>% 
+  group_by(harvest, inside_fence, species, inside_slash, year) %>% 
+  summarize(
+    avg_ht = mean(ht),
+    sd_ht = sd(ht),
+    n = n()
+  )
+
+view(avid_summ)
+
+#  summary(avid2020$ht)
+#  hist(avid2020$ht)
+  
+
+  
+
+
+```
+
+###Visualizing the data
+```{r}
+avid_summ %>% 
+  filter(species != "bc" & harvest != "sta_rd") %>% 
+ggplot(aes(x=inside_slash, y = avg_ht, color=year)) +
+  geom_point()+
+  facet_grid(inside_fence ~ species)
+
+```
+
+
+### codeing factorials
+```{r, factorial}
+
+#the "plot" below of predict(mymod) showed that the variability
+#of height was low for small seedlings and increased with large seedlings.
+#This is heteroscedasticity and common in ecological data. The typical fix is
+#a log transformation 
+mymod <- lm(log(ht) ~ inside_slash * inside_fence * species * year, 
+            data=subset(avid2020, species != "bc" & harvest != "sta_rd"))
+
+hist(residuals(mymod))
+plot(predict(mymod),residuals(mymod))
+
+summary(mymod)
+anova(mymod)
+library(emmeans)
+
+emmeans(mymod,~ inside_slash * inside_fence * species * year, type = "response")
+emmip(mymod, year ~ inside_slash | species + inside_fence, type = "response", CIs=TRUE)
+emmip(mymod, inside_fence ~ inside_slash | species + year, type = "response", CIs=TRUE)
+
+emmeans(mymod,pairwise ~ inside_fence | inside_slash * species * year, type = "response")
+
+
+emmeans(mymod,pairwise ~ inside_slash | inside_fence * species * year, type = "response")
+
+```
+
+
+###Graphs of Seedling Response
+```{r, graphs of seedling response}
+
+p <- ggplot(filter(avid2020, year == 2020),
+      aes(x = basal_area, y = ht))
+p + geom_point(aes(color=species))+ facet_grid(~inside_slash)
+
+
+  
+
+```
+

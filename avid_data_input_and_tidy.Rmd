@@ -66,6 +66,7 @@ data2018 <- data02 %>%
   mutate(
     year = 2018
   ) %>% 
+  drop_na(ht) %>% 
   mutate(ht2018.july = NULL) #this is not needed, the variable name was changed
 
 data2019 <- data02 %>% 
@@ -74,11 +75,13 @@ data2019 <- data02 %>%
   mutate(
     year = 2019
   ) %>% 
+  drop_na(ht) %>% 
   mutate(ht2019.july = NULL) #this is not needed, the variable name was changed
 
 data2020 <- data02 %>% 
   select(!c(ht2018.july, ht2019.july)) %>% 
   rename(ht = ht2020.july) %>% 
+  drop_na(ht) %>% 
   mutate(
     year = 2020
   )
