@@ -1,0 +1,200 @@
+---
+title: "AVID summary and graphs"
+author: "Peter Smallidge"
+date: "4/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!-- 
+use this code for comments between chunks
+-->
+
+
+```{r, Installing Libraries}
+
+library(tidyverse)
+library(skimr)        ## install.packages("skimr")
+#  dplyr is part of tidyverse -- library(dplyr)
+
+#
+#in console
+#   str(df)
+#   print(df, n=10)
+#   
+#   to make a df into tibble use x1 <- as_tibble(original_df)  
+#   
+#   dim(df) will show dimensions of the df
+#   
+
+
+```
+
+
+###Read CSV
+```{r}
+
+library(readr)
+data_gasline <- read_csv("tidy_avid_2018-2020_gasline.csv")
+#missing values were removed from the df.yr files before bind_row
+
+gasline <- data_gasline %>% 
+  mutate_at(
+    vars(harvest, year, inside_slash, inside_fence, plot, species, tag),
+    factor) %>% 
+  mutate(inside_fence = recode(inside_fence, "YES" = "yes")) #old = new
+
+```
+
+###Summary by Groups
+```{r}
+
+gasline_summ <- gasline %>% 
+  mutate(
+    ht_cm = ht * 2.54,
+    basal_sqm = basal_area * 0.09290304
+  ) %>% 
+  group_by(harvest, inside_fence, species, inside_slash, year) %>% 
+ summarize(
+   n = n(),
+   avg_ht = mean(ht),
+   sd_ht = sd(ht),
+   avg_basal = mean(basal_area),
+   sd_basal = sd(basal_area),
+   avg_ht_cm = mean(ht_cm),
+   sd_ht_cm = sd(ht_cm),
+   avg_basal_sqm = mean(basal_sqm),
+   sd_basal_sqm = sd(basal_sqm),
+   avg_grdCov = mean(ground_cov_pct),
+   sd_grdCov = sd(ground_cov_pct),
+   avg_subCov = mean(sub_cov_pct),
+   sd_subCov = sd(sub_cov_pct),
+   avg_canCov = mean(canopy_cov_pct),
+   sd_canCov = sd(canopy_cov_pct)
+  )
+
+write_csv(gasline_summ, "avid_gasline_summary_data.csv")
+
+
+#view(avid_summ)
+
+#  summary(avid2020$ht)
+#  hist(avid2020$ht)
+  
+
+  
+
+
+```
+
+###Visualizing the data
+```{r}
+
+avid_summ %>% 
+  filter(species != "bc" & harvest != "sta_rd") %>% 
+ggplot(aes(x=inside_slash, y = avg_ht, color=year)) +
+  geom_point()+
+  facet_grid(inside_fence ~ species)
+
+#assessing if basal area associated with seedling ht unfenced
+avid2020 %>% 
+  filter(species != "bc" & harvest != "sta_rd" & inside_fence != "yes") %>% 
+ggplot(aes(x=basal_area, y = ht, color=year)) +
+  geom_point()+
+  facet_grid(inside_slash ~ species)
+
+#outside wall, assessing ground cover on seedling height
+avid2020 %>% 
+  filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
+ggplot(aes(x=ground_cov_pct, y = ht, color=year)) +
+  geom_point()+
+  facet_grid(inside_fence ~ species)
+
+#outside wall, assessing subcanopy cover on seedling height
+avid2020 %>% 
+  filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
+ggplot(aes(x=sub_cov_pct, y = ht, color=year)) +
+  geom_point()+
+  facet_grid(inside_fence ~ species)
+
+#outside wall, assessing canopy cover on seedling height
+avid2020 %>% 
+  filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
+ggplot(aes(x=canopy_cov_pct, y = ht, color=year)) +
+  geom_point()+
+  facet_grid(inside_fence ~ species)
+
+
+```
+
+
+### coding factorials
+```{r, factorial}
+
+#the "plot" below of predict(mymod) showed that the variability
+#of height was low for small seedlings and increased with large seedlings.
+#This is heteroscedasticity and common in ecological data. The typical fix is
+#a log transformation 
+#
+mymod <- lm(log(ht) ~ inside_slash * inside_fence * species * year, 
+            data=subset(avid2020, species != "bc" & harvest != "sta_rd"))
+
+#The original model was run without log transformation of "ht".
+#The histogram of residuals was adequate, but the heteroscedasticity
+#was prominently fanned. The model was thus rerun with log transformation
+
+hist(residuals(mymod)) 
+#the log transformation made the distribution of residuals more normal
+#note that the x-axis values are essentially -1.5 to 1.5
+#
+plot(predict(mymod),residuals(mymod)) #this tests heteroscedasticity
+
+summary(mymod)
+anova(mymod)
+library(emmeans)
+
+#Estimated Marginal Means
+emmeans(mymod,~ inside_slash * inside_fence * species * year, type = "response")
+#using type="response" reverse transforms log(ht)
+#
+#emmip = Estimate Marginal Means Interaction Plot
+#No Fence vs. Yes Fence, and Without vs. With Slash Wall
+emmip(mymod, year ~ inside_slash | species + inside_fence, type = "response", CIs=TRUE)
+
+
+
+#emmip = Estimate Marginal Means Interaction Plot
+#No Fence vs. Yes Fence, and Without vs. With Slash Wall
+emmip(mymod, inside_fence ~ inside_slash | species + year, type = "response", CIs=TRUE)
+
+#pairwise looks at responses of pairs of the variable after the ~
+#pairwise "inside_fence" assesses if the fence matters by slash x species x year
+emmeans(mymod,pairwise ~ inside_fence | inside_slash * species * year, type = "response")
+
+
+#pairwise "inside_slash" assesses if the slash matters by fence x species x year
+emmeans(mymod,pairwise ~ inside_slash | inside_fence * species * year, type = "response")
+
+```
+```{r}
+
+```
+
+
+
+
+###Graphs of Seedling Response
+```{r, graphs of seedling response}
+
+p <- ggplot(filter(avid2020, year == 2020),
+      aes(x = basal_area, y = ht))
+p + geom_point(aes(color=species))+ facet_grid(~inside_slash)
+
+
+  
+
+```
+

@@ -35,13 +35,13 @@ library(skimr)        ## install.packages("skimr")
 
 
 ###Read CSV
-```{r}
+```{r, input Boot Red Pine tidy data}
 
 library(readr)
-data01 <- read_csv("tidy_avid_2018-2020_gasline.csv")
-#missing values were removed from the df.yr files before bind_row
+data_boot_redpine <- read_csv("tidy_avid_2018-2020_boot_redpine.csv")
+#missing values were removed from the df.yr files before bind_row of the "input" Rmd
 
-avid2020 <- data01 %>% 
+boot_redpine <- data_boot_redpine %>% 
   mutate_at(
     vars(harvest, year, inside_slash, inside_fence, plot, species, tag),
     factor) %>% 
@@ -52,7 +52,11 @@ avid2020 <- data01 %>%
 ###Summary by Groups
 ```{r}
 
-avid_summ <- avid2020 %>% 
+boot_redpine_summ <- boot_redpine %>% 
+  mutate(
+    ht_cm = ht * 2.54,
+    basal_sqm = basal_area * 0.09290304
+  ) %>% 
   group_by(harvest, inside_fence, species, inside_slash, year) %>% 
  summarize(
    n = n(),
@@ -60,6 +64,10 @@ avid_summ <- avid2020 %>%
    sd_ht = sd(ht),
    avg_basal = mean(basal_area),
    sd_basal = sd(basal_area),
+   avg_ht_cm = mean(ht_cm),
+   sd_ht_cm = sd(ht_cm),
+   avg_basal_sqm = mean(basal_sqm),
+   sd_basal_sqm = sd(basal_sqm),
    avg_grdCov = mean(ground_cov_pct),
    sd_grdCov = sd(ground_cov_pct),
    avg_subCov = mean(sub_cov_pct),
@@ -68,16 +76,12 @@ avid_summ <- avid2020 %>%
    sd_canCov = sd(canopy_cov_pct)
   )
 
+write_csv(boot_redpine_summ, "avid_boot_redpine_summary_data.csv")
 
-
-view(avid_summ)
 
 #  summary(avid2020$ht)
-#  hist(avid2020$ht)
+  hist(boot_redpine$ht)
   
-
-  
-
 
 ```
 
@@ -129,14 +133,19 @@ ggplot(aes(x=canopy_cov_pct, y = ht, color=year)) +
 #of height was low for small seedlings and increased with large seedlings.
 #This is heteroscedasticity and common in ecological data. The typical fix is
 #a log transformation 
+#
 mymod <- lm(log(ht) ~ inside_slash * inside_fence * species * year, 
             data=subset(avid2020, species != "bc" & harvest != "sta_rd"))
+
+#The original model was run without log transformation of "ht".
+#The histogram of residuals was adequate, but the heteroscedasticity
+#was prominently fanned. The model was thus rerun with log transformation
 
 hist(residuals(mymod)) 
 #the log transformation made the distribution of residuals more normal
 #note that the x-axis values are essentially -1.5 to 1.5
 #
-plot(predict(mymod),residuals(mymod))
+plot(predict(mymod),residuals(mymod)) #this tests heteroscedasticity
 
 summary(mymod)
 anova(mymod)
