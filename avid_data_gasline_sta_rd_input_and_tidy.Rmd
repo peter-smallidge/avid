@@ -34,12 +34,14 @@ library(readxl)
 ###Read AVID slash wall data
 ```{r,read avid slash wall}
  
-raw_data_01 <- read_excel("avid_cleaned_gasline_sta_2018-2020.xlsx",
-col_types = c("text", "text", "text",
-"text", "numeric", "text", "text",
-"numeric", "numeric", "numeric",
-"numeric", "text", "text", "numeric",
-"text", "numeric", "numeric"))
+raw_data_01 <- read_excel("avid_gasline_sta_cleaned_gasline_2018-2020.xlsx", 
+    col_types = c("text", "text", "text", 
+        "text", "text", "text", "text", "numeric", 
+        "numeric", "numeric", "numeric", 
+        "text", "text", "numeric", "numeric", 
+        "numeric", "numeric"))
+
+
 data02 <- raw_data_01 %>% 
   mutate_at(
     vars(harvest, inside_slash, inside_fence, plot, species, quad, tag),
@@ -83,5 +85,5 @@ data2020 <- data02 %>%
 avid_tidy <- 
   bind_rows(data2018, data2019, data2020)
 write_csv(avid_tidy, "tidy_avid_2018-2020_gasline.csv")
- 
+  
 ```

@@ -75,7 +75,7 @@ gasline_summ <- gasline %>%
    avg_canCov = mean(canopy_cov_pct),
    sd_canCov = sd(canopy_cov_pct)
   )
-
+ 
 write_csv(gasline_summ, "avid_gasline_summary_data.csv")
 
 

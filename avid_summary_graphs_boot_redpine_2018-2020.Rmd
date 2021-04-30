@@ -34,22 +34,41 @@ library(skimr)        ## install.packages("skimr")
 ```
 
 
-###Read CSV
+###Read tidy CSV, merge Mike and Katie data
 ```{r, input Boot Red Pine tidy data}
 
 library(readr)
 data_boot_redpine <- read_csv("tidy_avid_2018-2020_boot_redpine.csv")
-#missing values were removed from the df.yr files before bind_row of the "input" Rmd
 
 boot_redpine <- data_boot_redpine %>% 
   mutate_at(
-    vars(harvest, year, inside_slash, inside_fence, plot, species, tag),
+    vars(harvest, year, inside_slash, inside_fence, plot, species, tag, year, issue),
     factor) %>% 
   mutate(inside_fence = recode(inside_fence, "YES" = "yes")) #old = new
 
+
+data_sta_rd <- read_csv("tidy_avid_2018-2020_gasline.csv") %>% 
+  mutate(issue = " ")  %>% 
+  mutate_at(
+    vars(harvest, year, inside_slash, inside_fence, plot, species, tag, year, issue),
+    factor) %>% 
+  filter(!c(harvest == "gas_line"))
+
+
+data_station_pine <- bind_rows(data_sta_rd, boot_redpine) %>% 
+  filter(harvest %in% c("sta_rd", "red_pine", "boot", "wedge")) %>% 
+  mutate(
+    harv_agg = harvest
+  ) %>% 
+   mutate(
+    harv_agg = recode(harv_agg, "boot" = "sta_rd", "wedge" = "sta_rd")
+  )
+
+
+
 ```
 
-###Summary by Groups
+###Summary by Harvests: boot, wedge, sta_rd, red_pine
 ```{r}
 
 boot_redpine_summ <- boot_redpine %>% 
@@ -57,7 +76,9 @@ boot_redpine_summ <- boot_redpine %>%
     ht_cm = ht * 2.54,
     basal_sqm = basal_area * 0.09290304
   ) %>% 
-  group_by(harvest, inside_fence, species, inside_slash, year) %>% 
+  filter(inside_fence == "no") %>% 
+  mutate(inside_fence = NULL) %>% 
+  group_by(harvest, species, inside_slash, year) %>% 
  summarize(
    n = n(),
    avg_ht = mean(ht),
@@ -77,53 +98,120 @@ boot_redpine_summ <- boot_redpine %>%
   )
 
 write_csv(boot_redpine_summ, "avid_boot_redpine_summary_data.csv")
-
+ #
+ #NOTE - boot_redpine does not have a fence treatment. That variable was removed
+ #
 
 #  summary(avid2020$ht)
   hist(boot_redpine$ht)
-  
+   
 
 ```
+
+### Summary for Data Aggregated by Harvest (boot, wedge, = sta_rd |  red pine)
+```{r}
+
+station_pine_summ <- data_station_pine %>% 
+  mutate(
+    ht_cm = ht * 2.54,
+    basal_sqm = basal_area * 0.09290304
+  ) %>% 
+  filter(inside_fence == "no") %>% 
+  mutate(inside_fence = NULL) %>% 
+ group_by(harv_agg, species, inside_slash, year) %>% 
+ summarize(
+   n = n(),
+   avg_ht = mean(ht),
+   sd_ht = sd(ht),
+   avg_basal = mean(basal_area),
+   sd_basal = sd(basal_area),
+   avg_ht_cm = mean(ht_cm),
+   sd_ht_cm = sd(ht_cm),
+   avg_basal_sqm = mean(basal_sqm),
+   sd_basal_sqm = sd(basal_sqm),
+   avg_grdCov = mean(ground_cov_pct),
+   sd_grdCov = sd(ground_cov_pct),
+   avg_subCov = mean(sub_cov_pct),
+   sd_subCov = sd(sub_cov_pct),
+   avg_canCov = mean(canopy_cov_pct),
+   sd_canCov = sd(canopy_cov_pct)
+  )
+
+write_csv(station_pine_summ, "avid_station_pine_summary_data.csv")
+
+
+#NOTE - boot_redpine does not have a fence treatment. That variable was removed
+
+
+#  summary(avid2020$ht)
+  hist(data_station_pine$ht)
+
+
+```
+
+<!-- 
+
+There are two similiar data files
+  - boot_redpine has harvest = boot, wedge and red pine
+  - data_station_pine has harv_agg = sta_rd and red pine. boot and wedge aggregated.
+  - for both df, the variable "inside_fence is removed
+-->
+
 
 ###Visualizing the data
 ```{r}
 
-avid_summ %>% 
+
+
+boot_redpine_summ %>% 
   filter(species != "bc" & harvest != "sta_rd") %>% 
 ggplot(aes(x=inside_slash, y = avg_ht, color=year)) +
   geom_point()+
-  facet_grid(inside_fence ~ species)
+  facet_grid(harvest ~ species)
+
+station_pine_summ %>% 
+  filter(species != "sm" ) %>% 
+ggplot(aes(x=inside_slash, y = avg_ht, color=year)) +
+  geom_point()+
+  facet_grid(harv_agg ~ species)
+
+
+
+```
+
+<!-- 
 
 #assessing if basal area associated with seedling ht unfenced
-avid2020 %>% 
+boot_redpine_summ %>% 
   filter(species != "bc" & harvest != "sta_rd" & inside_fence != "yes") %>% 
 ggplot(aes(x=basal_area, y = ht, color=year)) +
   geom_point()+
   facet_grid(inside_slash ~ species)
 
 #outside wall, assessing ground cover on seedling height
-avid2020 %>% 
+boot_redpine_summ %>% 
   filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
 ggplot(aes(x=ground_cov_pct, y = ht, color=year)) +
   geom_point()+
-  facet_grid(inside_fence ~ species)
+  facet_grid(harvest ~ species)
 
 #outside wall, assessing subcanopy cover on seedling height
-avid2020 %>% 
+boot_redpine_summ %>% 
   filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
 ggplot(aes(x=sub_cov_pct, y = ht, color=year)) +
   geom_point()+
-  facet_grid(inside_fence ~ species)
+  facet_grid(harvest ~ species)
 
 #outside wall, assessing canopy cover on seedling height
-avid2020 %>% 
+boot_redpine_summ %>% 
   filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
 ggplot(aes(x=canopy_cov_pct, y = ht, color=year)) +
   geom_point()+
-  facet_grid(inside_fence ~ species)
+  facet_grid(harvest ~ species)
+  
+  -->
 
 
-```
 
 
 ### coding factorials
@@ -134,44 +222,48 @@ ggplot(aes(x=canopy_cov_pct, y = ht, color=year)) +
 #This is heteroscedasticity and common in ecological data. The typical fix is
 #a log transformation 
 #
-mymod <- lm(log(ht) ~ inside_slash * inside_fence * species * year, 
-            data=subset(avid2020, species != "bc" & harvest != "sta_rd"))
+mod_boot_pine <- lm(ht ~ inside_slash * harvest * species * year, 
+            data=subset(boot_redpine, species != "bc" & harvest != "sta_rd"))
 
 #The original model was run without log transformation of "ht".
 #The histogram of residuals was adequate, but the heteroscedasticity
 #was prominently fanned. The model was thus rerun with log transformation
 
-hist(residuals(mymod)) 
-#the log transformation made the distribution of residuals more normal
-#note that the x-axis values are essentially -1.5 to 1.5
-#
-plot(predict(mymod),residuals(mymod)) #this tests heteroscedasticity
+hist(residuals(mod_boot_pine))  #appears normally distributed
 
-summary(mymod)
-anova(mymod)
+#a log transformation will the distribution of residuals more normal
+#note the high and low x-axis values 
+
+
+plot(predict(mod_boot_pine),residuals(mod_boot_pine)) #this tests heteroscedasticity
+# there is a strong "fan" pattern. ht will be log transformed.
+# log transformation wasn't effective at removing heteroscedasticity
+
+summary(mod_boot_pine)
+anova(mod_boot_pine)
 library(emmeans)
 
 #Estimated Marginal Means
-emmeans(mymod,~ inside_slash * inside_fence * species * year, type = "response")
+emmeans(mod_boot_pine,~ inside_slash * harvest * species * year, type = "response")
 #using type="response" reverse transforms log(ht)
 #
 #emmip = Estimate Marginal Means Interaction Plot
 #No Fence vs. Yes Fence, and Without vs. With Slash Wall
-emmip(mymod, year ~ inside_slash | species + inside_fence, type = "response", CIs=TRUE)
+emmip(mod_boot_pine, year ~ inside_slash | species + inside_fence, type = "response", CIs=TRUE)
 
 
 
 #emmip = Estimate Marginal Means Interaction Plot
 #No Fence vs. Yes Fence, and Without vs. With Slash Wall
-emmip(mymod, inside_fence ~ inside_slash | species + year, type = "response", CIs=TRUE)
+emmip(mod_boot_pine, inside_fence ~ inside_slash | species + year, type = "response", CIs=TRUE)
 
 #pairwise looks at responses of pairs of the variable after the ~
 #pairwise "inside_fence" assesses if the fence matters by slash x species x year
-emmeans(mymod,pairwise ~ inside_fence | inside_slash * species * year, type = "response")
+emmeans(mod_boot_pine,pairwise ~ inside_fence | inside_slash * species * year, type = "response")
 
 
 #pairwise "inside_slash" assesses if the slash matters by fence x species x year
-emmeans(mymod,pairwise ~ inside_slash | inside_fence * species * year, type = "response")
+emmeans(mod_boot_pine,pairwise ~ inside_slash | inside_fence * species * year, type = "response")
 
 ```
 ```{r}

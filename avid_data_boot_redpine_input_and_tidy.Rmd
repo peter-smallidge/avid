@@ -96,7 +96,7 @@ avid_tidy <-
   bind_rows(data2018, data2019, data2020)
 
 write_csv(avid_tidy, "tidy_avid_2018-2020_boot_redpine.csv")
- 
+  
 
 ```
 
