@@ -42,11 +42,11 @@ raw_data_01 <- read_excel("avid_boot_redpine_cleaned.2018-2021.xlsx",
         "text", "text", "text", "text", "text", 
         "numeric", "numeric", "numeric", 
         "numeric", "text", "numeric", "numeric", 
-        "numeric", "numeric", "text"), skip = 3)
+        "numeric", "numeric", "numeric"), skip = 3)
 
 data02 <- raw_data_01 %>% 
   mutate_at(
-    vars(harvest, inside_slash, inside_fence, plot, species, quad, tag, issue),
+    vars(harvest, inside_slash, inside_fence, plot, species, quad, tag),
     factor) %>% 
     rename(ht2020 = ht2020.April2021) %>% 
     mutate(inside_fence = recode(inside_fence, "YES" = "yes")) %>%  #old = new
@@ -54,7 +54,12 @@ data02 <- raw_data_01 %>%
       sub_cov_pct = sub_cov_pct * 100,
       canopy_cov_pct = canopy_cov_pct * 100
     ) %>% 
-  select(!c(gps,quad))
+  select(!c(gps,quad)) %>% 
+  filter(issue <1) %>% 
+  #filter(ht2018.july < 16.5) %>%  #removes potential stump sprouts
+  #   used threshold 16.5" which was 75% percentile of Mike's gasline data
+  #   creates file avid_tidy_short, "tidy_avid_short_2018-2020_boot_redpine.csv
+  mutate(issue = NULL)
 
 #str(data02)
 #need to change var=inside_fence for YES to yes
@@ -92,10 +97,10 @@ data2020 <- data02 %>%
     year = 2020
   )
 
-avid_tidy <- 
+avid_tidy_short <- 
   bind_rows(data2018, data2019, data2020)
 
-write_csv(avid_tidy, "tidy_avid_2018-2020_boot_redpine.csv")
+write_csv(avid_tidy_short, "tidy_avid_short_2018-2020_boot_redpine.csv")
   
 
 ```

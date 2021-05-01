@@ -34,12 +34,12 @@ library(readr)
 
 ```
 
-### all data included
 
 ###Read tidy CSV, merge Mike and Katie data
 ```{r, input Boot Red Pine tidy data}
 
 library(readr)
+data_boot_redpine <- read_csv("tidy_avid_short_2018-2020_boot_redpine.csv") #remove "_short"
 data_boot_redpine <- read_csv("tidy_avid_2018-2020_boot_redpine.csv") #removed "_short"
 
 boot_redpine <- data_boot_redpine %>% #Data Mike collected 2021 from Katie's 2018-2019 plots
@@ -78,6 +78,7 @@ hist(data_test$ht)
 ```
 
 ###Summary by Harvests: boot, wedge, sta_rd, red_pine
+### remove _short, data from Mike's plots
 ```{r}
 
 boot_redpine_summ <- boot_redpine %>% 
@@ -106,7 +107,7 @@ boot_redpine_summ <- boot_redpine %>%
    sd_canCov = sd(canopy_cov_pct)
   )
 
-write_csv(boot_redpine_summ, "avid_boot_redpine_summary_data.csv")
+write_csv(boot_redpine_summ, "avid_boot_redpine_short_summary_data.csv")
  #
  #NOTE - boot_redpine does not have a fence treatment. That variable was removed
  #
@@ -120,6 +121,7 @@ write_csv(boot_redpine_summ, "avid_boot_redpine_summary_data.csv")
 
 
 ### Summary for Data Aggregated by Harvest (boot, wedge, = sta_rd |  red pine)
+####  remove _short
 ```{r}
 
 station_pine_summ <- data_station_pine %>% 
@@ -148,7 +150,7 @@ station_pine_summ <- data_station_pine %>%
    sd_canCov = sd(canopy_cov_pct)
   )
 
-write_csv(station_pine_summ, "avid_station_pine_summary_data.csv")
+write_csv(station_pine_summ, "avid_station_pine_short_summary_data.csv")
 
 
 #NOTE - boot_redpine does not have a fence treatment. That variable was removed

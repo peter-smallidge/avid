@@ -50,6 +50,11 @@ data02 <- raw_data_01 %>%
   select(!c(site_name, gps,quad,date2019))
 #str(data02)
 #need to change var=inside_fence for YES to yes
+#
+#
+
+hist(data02$ht2018.july)
+summary(data02$ht2018.july)
 ```
 
 ###Make the Data Tidy
