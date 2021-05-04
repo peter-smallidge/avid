@@ -34,7 +34,7 @@ library(readr)
 
 ```
 
-### all data included
+### all data included (see this filename with "_short" for the reduce seedling ht data)
 
 ###Read tidy CSV, merge Mike and Katie data
 ```{r, input Boot Red Pine tidy data}
