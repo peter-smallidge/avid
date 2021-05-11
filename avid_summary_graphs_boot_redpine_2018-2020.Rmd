@@ -1,5 +1,5 @@
 ---
-title: "AVID summary and graphs"
+title: "AVID summary and graphs Boot & Redpine"
 author: "Peter Smallidge"
 date: "4/22/2021"
 output: html_document
@@ -42,12 +42,11 @@ library(readr)
 library(readr)
 data_boot_redpine <- read_csv("tidy_avid_2018-2020_boot_redpine.csv") #removed "_short"
 
-boot_redpine <- data_boot_redpine %>% #Data Mike collected 2021 from Katie's 2018-2019 plots
-    # the "_short" from the input/tidy r-code, retains <16.5 " to avoid stump sprouts
+boot_redpine <- data_boot_redpine %>% 
+      #Data Mike collected 2021 from Katie's 2018-2019 plots
   mutate_at(
     vars(harvest, year, inside_slash, inside_fence, plot, species, tag, year),
     factor) %>% 
- #filter(issue != "1") %>%  variable "issue" was removed in the input/tidy file code
  mutate(inside_fence = recode(inside_fence, "YES" = "yes")) #old = new
 
 
@@ -61,33 +60,46 @@ data_sta_rd <- read_csv("tidy_avid_2018-2020_gasline.csv") %>% # From Mike's AVI
 
 data_station_pine <- bind_rows(data_sta_rd, boot_redpine) %>% 
   filter(harvest %in% c("sta_rd", "red_pine", "boot", "wedge")) %>% 
+  filter(harvest != "gas_line") %>% 
   filter(harvest != "sta_rd" & species != "sm") %>%  #no SM inside slash at sta_rd
   filter(harvest != "sta_rd" & species != "ro") %>%  #no RO inside slash at sta_rd
   mutate(
-    harv_agg = harvest
+    harv_agg = harvest,
+    ht_cm = ht * 2.54,
+    basal_sqm = basal_area * 0.09290304
   ) %>% 
    mutate(
     harv_agg = recode(harv_agg, "boot" = "sta_rd", "wedge" = "sta_rd")
   )
 
-data_test <- data_station_pine %>% 
-  filter(year == "2018")
+data_station <- data_station_pine %>% #to use in linear model
+  filter(harv_agg %in% c("sta_rd"))
+  
+data_pine <- data_station_pine %>% #to use in linear model
+  filter(harv_agg %in% c("red_pine"))
 
-hist(data_test$ht)
+
+#data_test <- data_station_pine %>% 
+#  filter(year == "2018")
+
+#hist(data_test$ht)
 
 ```
 
 ###Summary by Harvests: boot, wedge, sta_rd, red_pine
 ```{r}
+# initially ran with df = "boot_redpine"
+# re-ran with df = "data_station_pine"
 
-boot_redpine_summ <- boot_redpine %>% 
+
+boot_redpine_summ <- data_station_pine %>% 
   mutate(
     ht_cm = ht * 2.54,
     basal_sqm = basal_area * 0.09290304
   ) %>% 
   filter(inside_fence == "no") %>% 
   mutate(inside_fence = NULL) %>% 
-  group_by(harvest, species, inside_slash, year) %>% 
+  group_by(harv_agg, species, inside_slash, year) %>% 
  summarize(
    n = n(),
    avg_ht = mean(ht),
@@ -106,7 +118,7 @@ boot_redpine_summ <- boot_redpine %>%
    sd_canCov = sd(canopy_cov_pct)
   )
 
-write_csv(boot_redpine_summ, "avid_boot_redpine_summary_data.csv")
+write_csv(boot_redpine_summ, "avid_station_redpine_summary_data.csv")
  #
  #NOTE - boot_redpine does not have a fence treatment. That variable was removed
  #
@@ -296,7 +308,18 @@ emmeans(mod_boot_pine,pairwise ~ inside_slash | harvest * species * year, type =
 #This is heteroscedasticity and common in ecological data. The typical fix is
 #a log transformation 
 #
-mod_station_pine <- lm(ht ~ inside_slash * harv_agg * species * year, 
+
+
+mod_station <- lm(log(ht_cm) ~ inside_slash * species * year, 
+            data=subset(data_station))
+
+#don't use the red pine site in analysis. Too many missing, plus heterscadascitiy
+mod_pine <- lm(ht_cm ~ inside_slash * species * year, #too many missing to log transform
+            data=subset(data_pine))
+
+
+
+mod_station_pine <- lm(log(ht_cm) ~ inside_slash * harv_agg * species * year, 
             data=subset(data_station_pine))
 
 hist(log(data_station_pine$ht))
@@ -305,43 +328,48 @@ hist(log(data_station_pine$ht))
 #The histogram of residuals was adequate, but the heteroscedasticity
 #was prominently fanned. The model was thus rerun with log transformation
 
-hist(residuals(mod_boot_pine))  #appears normally distributed
+hist(residuals(mod_station))  #appears normally distributed
 
 #a log transformation will the distribution of residuals more normal
 #note the high and low x-axis values 
 
 
-plot(predict(mod_boot_pine),residuals(mod_boot_pine)) #this tests heteroscedasticity
+plot(predict(mod_station),residuals(mod_station)) #this tests heteroscedasticity
 # there is a strong "fan" pattern. ht will be log transformed.
 # log transformation created an error, perhaps too many NA
 
-summary(mod_station_pine)
-anova(mod_station_pine)
+summary(mod_station)
+anova(mod_station)
 library(emmeans)
 
 #Estimated Marginal Means
-emmeans(mod_station_pine,~ inside_slash * harv_agg * species * year, type = "response")
+emmeans(mod_station,~ inside_slash *  species * year, type = "response")
 #using type="response" reverse transforms log(ht)
 
 
 
 #emmip = Estimate Marginal Means Interaction Plot
 #No Fence vs. Yes Fence, and Without vs. With Slash Wall
-emmip(mod_station_pine, year ~ inside_slash | species + harv_agg, type = "response", CIs=TRUE)
+emmip(mod_station, year ~ inside_slash | species , type = "response", CIs=TRUE)
 
 
 
 #emmip = Estimate Marginal Means Interaction Plot
 #No Fence vs. Yes Fence, and Without vs. With Slash Wall
-emmip(mod_station_pine, harv_agg ~ inside_slash | species + year, type = "response", CIs=TRUE)
+## emmip(model name, color ~, xaxis | row_panel + column_panel
 
-#pairwise looks at responses of pairs of the variable after the ~
-#pairwise "inside_fence" assesses if the fence matters by slash x species x year
-emmeans(mod_station_pine,pairwise ~ harv_agg | inside_slash * species * year, type = "response")
-
+emmip(mod_station, year ~ inside_slash | species  , type = "response", CIs=TRUE)
 
 #pairwise "inside_slash" assesses if the slash matters by fence x species x year
-emmeans(mod_station_pine,pairwise ~ inside_slash | harv_agg * species * year, type = "response")
+emmeans(mod_station,pairwise ~ inside_slash |  species * year, type = "response")
+
+#this compares one year x species within the slash wall treatment combo
+#response variable is ht(cm), log transformed for analysis, reported as untransformed
+#estimated marginal means
+#pairwise looks at responses of pairs of the variable after the ~
+# data for station road only. Red pine omitted due to data instability issues.
+emmeans(mod_station,pairwise ~ inside_slash |  year * species, type = "response")
+
 
 ```
 

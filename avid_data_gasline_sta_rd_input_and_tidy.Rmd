@@ -33,7 +33,9 @@ library(readxl)
 
 ###Read AVID slash wall data
 ```{r,read avid slash wall}
- 
+
+# data from Mike's plots at gas line and along Station Road between
+# Wedge and Guise, and along north side of Wedge.
 raw_data_01 <- read_excel("avid_gasline_sta_cleaned_gasline_2018-2020.xlsx", 
     col_types = c("text", "text", "text", 
         "text", "text", "text", "text", "numeric", 
@@ -59,7 +61,7 @@ data02 <- raw_data_01 %>%
 
 ###Make the Data Tidy
 ```{r, make data tidy}
-#create df with heights for only one year
+#create df with heights for each year, then bind.
 #use bind_rows(df1, df2) to reaggregate
 
 data2018 <- data02 %>% 
@@ -101,7 +103,7 @@ write_csv(avid_tidy_gasline, "tidy_avid_2018-2020_gasline.csv")
 
 
 ```{r}
-avid_tidy_plot_count <- avid_tidy %>% 
+avid_tidy_plot_count <- avid_tidy_gasline %>% 
   filter(year == 2018) %>% 
   group_by(harvest, inside_slash, plot, species) %>% 
   summarize(

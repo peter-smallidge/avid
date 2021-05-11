@@ -90,38 +90,58 @@ write_csv(gasline_summ, "avid_gasline_summary_data.csv")
 
 ```
 
+
+```{r}
+freq_avid_gasline <- gasline %>% 
+  group_by(harvest, inside_slash, inside_fence, plot) %>% 
+  summarise(n= n()) %>% 
+ # mutate(freq = n / sum(n)) %>% 
+  arrange(harvest, inside_slash, inside_fence, plot) %>% 
+  
+  group_by(harvest, inside_slash, inside_fence) %>% 
+  summarize(n_plots = n()) %>% 
+  #mutate(freq = n2 / sum(n2)) %>% 
+  arrange(harvest, inside_slash, inside_fence) # number of plots
+  
+
+
+```
+
+
+
+
 ###Visualizing the data
 ```{r}
 
-avid_summ %>% 
+gasline_summ %>% 
   filter(species != "bc" & harvest != "sta_rd") %>% 
 ggplot(aes(x=inside_slash, y = avg_ht, color=year)) +
   geom_point()+
   facet_grid(inside_fence ~ species)
 
 #assessing if basal area associated with seedling ht unfenced
-avid2020 %>% 
+gasline %>% 
   filter(species != "bc" & harvest != "sta_rd" & inside_fence != "yes") %>% 
 ggplot(aes(x=basal_area, y = ht, color=year)) +
   geom_point()+
   facet_grid(inside_slash ~ species)
 
 #outside wall, assessing ground cover on seedling height
-avid2020 %>% 
+gasline %>% 
   filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
 ggplot(aes(x=ground_cov_pct, y = ht, color=year)) +
   geom_point()+
   facet_grid(inside_fence ~ species)
 
 #outside wall, assessing subcanopy cover on seedling height
-avid2020 %>% 
+gasline %>% 
   filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
 ggplot(aes(x=sub_cov_pct, y = ht, color=year)) +
   geom_point()+
   facet_grid(inside_fence ~ species)
 
 #outside wall, assessing canopy cover on seedling height
-avid2020 %>% 
+gasline %>% 
   filter(species != "bc" & harvest != "sta_rd" & inside_slash != "yes") %>% 
 ggplot(aes(x=canopy_cov_pct, y = ht, color=year)) +
   geom_point()+
@@ -139,44 +159,56 @@ ggplot(aes(x=canopy_cov_pct, y = ht, color=year)) +
 #This is heteroscedasticity and common in ecological data. The typical fix is
 #a log transformation 
 #
-mymod <- lm(log(ht) ~ inside_slash * inside_fence * species * year, 
-            data=subset(avid2020, species != "bc" & harvest != "sta_rd"))
+gasline_mod <- lm(log(ht) ~ inside_slash * inside_fence * species * year, 
+            data=subset(gasline, species != "bc" & harvest != "sta_rd"))
 
 #The original model was run without log transformation of "ht".
 #The histogram of residuals was adequate, but the heteroscedasticity
 #was prominently fanned. The model was thus rerun with log transformation
 
-hist(residuals(mymod)) 
+hist(residuals(gasline_mod)) 
 #the log transformation made the distribution of residuals more normal
 #note that the x-axis values are essentially -1.5 to 1.5
 #
-plot(predict(mymod),residuals(mymod)) #this tests heteroscedasticity
+plot(predict(gasline_mod),residuals(gasline_mod)) #this tests heteroscedasticity
 
-summary(mymod)
-anova(mymod)
+summary(gasline_mod)
+anova(gasline_mod)
 library(emmeans)
 
 #Estimated Marginal Means
-emmeans(mymod,~ inside_slash * inside_fence * species * year, type = "response")
+emmeans(gasline_mod,~ inside_slash * inside_fence * species * year, type = "response")
 #using type="response" reverse transforms log(ht)
 #
 #emmip = Estimate Marginal Means Interaction Plot
 #No Fence vs. Yes Fence, and Without vs. With Slash Wall
-emmip(mymod, year ~ inside_slash | species + inside_fence, type = "response", CIs=TRUE)
+### emmip(model name, color ~, xaxis | row_panel + column_panel
+
+emmip(gasline_mod, year ~ inside_slash | species + inside_fence, type = "response", CIs=TRUE)
 
 
 
 #emmip = Estimate Marginal Means Interaction Plot
 #No Fence vs. Yes Fence, and Without vs. With Slash Wall
-emmip(mymod, inside_fence ~ inside_slash | species + year, type = "response", CIs=TRUE)
+### emmip(model name, color ~, xaxis | row_panel + column_panel
+
+emmip(gasline_mod, inside_slash ~ year | species + inside_fence, type = "response", CIs=TRUE)
+
+
+#emmip = Estimate Marginal Means Interaction Plot
+#No Fence vs. Yes Fence, and Without vs. With Slash Wall
+## emmip(model name, color ~, xaxis | row_panel + column_panel
+emmip(gasline_mod, inside_fence ~ inside_slash | species + year, type = "response", CIs=TRUE)
 
 #pairwise looks at responses of pairs of the variable after the ~
 #pairwise "inside_fence" assesses if the fence matters by slash x species x year
-emmeans(mymod,pairwise ~ inside_fence | inside_slash * species * year, type = "response")
+emmeans(gasline_mod,pairwise ~ inside_fence | inside_slash * species * year, type = "response")
 
 
 #pairwise "inside_slash" assesses if the slash matters by fence x species x year
-emmeans(mymod,pairwise ~ inside_slash | inside_fence * species * year, type = "response")
+### emmip(model name, color ~, xaxis | row_panel + column_panel
+
+emmeans(gasline_mod,pairwise ~ inside_slash | inside_fence * species * year, type = "response")
 
 ```
 ```{r}
