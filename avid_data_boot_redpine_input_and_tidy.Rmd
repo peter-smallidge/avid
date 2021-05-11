@@ -56,14 +56,20 @@ data02 <- raw_data_01 %>%
     ) %>% 
   select(!c(gps,quad)) %>% 
   filter(issue <1) %>% 
+  
   #filter(ht2018.july < 16.5) %>%  #removes potential stump sprouts
   #   used threshold 16.5" which was 75% percentile of Mike's gasline data
   #   creates file avid_tidy_short, "tidy_avid_short_2018-2020_boot_redpine.csv
+  
   mutate(issue = NULL)
 
-#str(data02)
-#need to change var=inside_fence for YES to yes
+# 5/10/2021 decided to use all the data, not the "short" data.
+# Pattern of hts similar to Mike's gas line data and the changes to statistical
+# inference didn't warrant the confusion of explaining the logic and process.
 
+
+summary(data02$ht2018.july)
+hist(data02$ht2018.july)
 ```
 
 ###Make the Data Tidy
@@ -97,13 +103,33 @@ data2020 <- data02 %>%
     year = 2020
   )
 
-avid_tidy_short <- 
-  bind_rows(data2018, data2019, data2020)
 
-write_csv(avid_tidy_short, "tidy_avid_short_2018-2020_boot_redpine.csv")
+avid_tidy <- 
+  bind_rows(data2018, data2019, data2020) %>% 
+  mutate_at(
+    vars(year), factor)
+
+write_csv(avid_tidy, "tidy_avid_2018-2020_boot_redpine.csv")
   
 
 ```
 
+```{r}
+avid_tidy_plot_count <- avid_tidy %>% 
+  filter(year == 2018) %>% 
+  group_by(harvest, inside_slash, plot, species) %>% 
+  summarize(
+    n = n()
+  ) %>% 
+  arrange(harvest, inside_slash, species)
+
+write_csv(avid_tidy_plot_count, "tidy_avid_2018_boot_pine_sample_sizes.csv")
+
+x1 <- avid_tidy_plot_count %>% 
+  group_by(harvest, inside_slash, species) %>% 
+  summarize(
+    sum = sum(n)
+  )
+```
 
 

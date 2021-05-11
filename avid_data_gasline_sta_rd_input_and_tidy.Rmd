@@ -53,8 +53,8 @@ data02 <- raw_data_01 %>%
 #
 #
 
-hist(data02$ht2018.july)
-summary(data02$ht2018.july)
+# hist(data02$ht2018.july)
+# summary(data02$ht2018.july)
 ```
 
 ###Make the Data Tidy
@@ -87,8 +87,28 @@ data2020 <- data02 %>%
   mutate(
     year = 2020
   )
-avid_tidy <- 
-  bind_rows(data2018, data2019, data2020)
-write_csv(avid_tidy, "tidy_avid_2018-2020_gasline.csv")
+
+avid_tidy_gasline <- 
+  bind_rows(data2018, data2019, data2020) %>% 
+  mutate_at(
+    vars(year), factor)
+
+
+write_csv(avid_tidy_gasline, "tidy_avid_2018-2020_gasline.csv")
   
 ```
+
+
+
+```{r}
+avid_tidy_plot_count <- avid_tidy %>% 
+  filter(year == 2018) %>% 
+  group_by(harvest, inside_slash, plot, species) %>% 
+  summarize(
+    n = n()
+  ) %>% 
+  arrange(harvest, inside_slash, species)
+
+write_csv(avid_tidy_plot_count, "tidy_avid_2018_gasline_sample_sizes.csv")
+```
+
