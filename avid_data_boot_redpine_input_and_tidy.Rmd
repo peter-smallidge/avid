@@ -55,7 +55,7 @@ data02 <- raw_data_01 %>%
       canopy_cov_pct = canopy_cov_pct * 100
     ) %>% 
   select(!c(gps,quad)) %>% 
-  filter(issue <1) %>% 
+  filter(issue <1) %>% #removes tagged species with missing or dead data
   
   #filter(ht2018.july < 16.5) %>%  #removes potential stump sprouts
   #   used threshold 16.5" which was 75% percentile of Mike's gasline data

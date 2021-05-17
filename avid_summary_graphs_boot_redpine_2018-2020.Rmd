@@ -34,13 +34,13 @@ library(readr)
 
 ```
 
-### all data included (see this filename with "_short" for the reduce seedling ht data)
+### all data included 
 
 ###Read tidy CSV, merge Mike and Katie data
 ```{r, input Boot Red Pine tidy data}
 
 library(readr)
-data_boot_redpine <- read_csv("tidy_avid_2018-2020_boot_redpine.csv") #removed "_short"
+data_boot_redpine <- read_csv("tidy_avid_2018-2020_boot_redpine.csv")
 
 boot_redpine <- data_boot_redpine %>% 
       #Data Mike collected 2021 from Katie's 2018-2019 plots
@@ -88,7 +88,7 @@ data_pine <- data_station_pine %>% #to use in linear model
 
 ###Summary by Harvests: boot, wedge, sta_rd, red_pine
 ```{r}
-# initially ran with df = "boot_redpine"
+
 # re-ran with df = "data_station_pine"
 
 
@@ -121,7 +121,7 @@ boot_redpine_summ <- data_station_pine %>%
 write_csv(boot_redpine_summ, "avid_station_redpine_summary_data.csv")
  #
  #NOTE - boot_redpine does not have a fence treatment. That variable was removed
- #
+ # the written csv file looks similar (identical?) to the next df ???
 
 #  summary(avid2020$ht)
   hist(boot_redpine$ht)
@@ -279,7 +279,7 @@ emmeans(mod_boot_pine,~ inside_slash * harvest * species * year, type = "respons
 
 
 #emmip = Estimate Marginal Means Interaction Plot
-#No Fence vs. Yes Fence, and Without vs. With Slash Wall
+#Without vs. With Slash Wall
 emmip(mod_boot_pine, year ~ inside_slash | species + harvest, type = "response", CIs=TRUE)
 
 
