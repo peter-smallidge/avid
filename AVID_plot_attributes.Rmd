@@ -1,0 +1,117 @@
+---
+title: "AVID_plot_attributes"
+author: "Peter Smallidge"
+date: "5/17/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Install Libraries
+```{r, install libraries}
+library(tidyverse)
+library(skimr)        ## install.packages("skimr")
+library(readxl)
+```
+
+
+### Input Raw Boot and Red Pine
+```{r, read boot and red pine}
+
+raw_boot <- read_excel("avid_boot_redpine_cleaned.2018-2021.xlsx", 
+    sheet = "r_ready", col_types = c("text", 
+        "text", "text", "text", "text", "text", 
+        "numeric", "numeric", "numeric", 
+        "numeric", "text", "numeric", "numeric", 
+        "numeric", "numeric", "numeric"), skip = 3)
+
+boot01 <- raw_boot %>% 
+  mutate_at(
+    vars(harvest, inside_slash, inside_fence, plot, species, quad, gps, tag),
+    factor) %>% 
+    rename(ht2020 = ht2020.April2021, 
+           ht2019 = ht2019.july,
+           ht2018 = ht2018.july,
+           ba_sq_ac = basal_area) %>% 
+    mutate(inside_fence = recode(inside_fence, "YES" = "yes")) %>%  #old = new
+    mutate(
+      sub_cov_pct = sub_cov_pct * 100,
+      canopy_cov_pct = canopy_cov_pct * 100,
+      ht2020_cm = ht2020 * 2.54,
+      ht2019_cm = ht2019 * 2.54,
+      ht2018_cm = ht2018 * 2.54,
+      ba_sq_ha = ba_sq_ac * 0.09290304,
+      harvest = recode(harvest, "boot" = "sta_rd", "wedge" = "sta_rd")
+    ) %>% 
+  select(!c(gps,quad)) %>%
+  filter(!harvest %in% ("red_pine")) %>% 
+  droplevels() %>% 
+  filter(issue <1) %>%  #removes tagged species with missing or dead data
+  select(!c(issue))
+ 
+
+```
+
+### Input Gas Line and Station Road
+```{r, read gas line and station road}
+# data from Mike's plots at gas line and along Station Road between
+# Wedge and Guise, and along north side of Wedge.
+raw_gasline <- read_excel("avid_gasline_sta_cleaned_gasline_2018-2020.xlsx", 
+    col_types = c("text", "text", "text", 
+        "text", "text", "text", "text", "numeric", 
+        "numeric", "numeric", "numeric", 
+        "text", "text", "numeric", "numeric", 
+        "numeric", "numeric")) %>% 
+   select(!c(site_name, gps,quad,date2019))
+
+
+gas_line01 <- raw_gasline %>% 
+  mutate_at(
+    vars(harvest, inside_slash, inside_fence, plot, species, tag),
+    factor) %>% 
+  mutate(inside_fence = recode(inside_fence, "YES" = "yes")) %>%  #old = new
+  rename(ht2020 = ht2020.july, 
+          ht2019 = ht2019.july,
+          ht2018 = ht2018.july,
+          ba_sq_ac = basal_area) %>% 
+  mutate(
+      ht2020_cm = ht2020 * 2.54,
+      ht2019_cm = ht2019 * 2.54,
+      ht2018_cm = ht2018 * 2.54,
+      ba_sq_ha = ba_sq_ac * 0.09290304,
+      harvest = recode(harvest, "boot" = "sta_rd", "wedge" = "sta_rd")
+    )  
+
+```
+
+
+```{r}
+avid01 <- bind_rows(gas_line01, boot01) %>% 
+  #filter(harvest %in% ("gas_line")) %>% 
+  #filter(inside_slash %in% ("no")) %>% 
+  filter(!species %in% c("bc")) %>% 
+  mutate( 
+  grow_inch = ht2020 - ht2018,
+  grow_cm = ht2020_cm - ht2018_cm
+  )
+
+fence_sum <- avid01 %>% 
+  group_by(harvest, inside_slash, inside_fence) %>% 
+  summarise(
+    #na.rm=FALSE,
+    n = n(),
+    #grow_in_avg = mean(grow_inch),
+    #grow_cm_avg = mean(grow_cm),
+    ba_ha_avg = mean(ba_sq_ha),
+    ground_avg = mean(ground_cov_pct),
+    sub_avg = mean(sub_cov_pct),
+    canopy_avg = mean(canopy_cov_pct)
+  )
+
+ggplot (data = avid01)+
+  geom_point(mapping = aes(x=ba_sq_ha, y = grow_cm, color= inside_fence))
+  
+```
+

@@ -66,6 +66,9 @@ data02 <- raw_data_01 %>%
 # 5/10/2021 decided to use all the data, not the "short" data.
 # Pattern of hts similar to Mike's gas line data and the changes to statistical
 # inference didn't warrant the confusion of explaining the logic and process.
+# 
+# In readme file, discussed the omission of red pine AVID data due to its
+# instability for normal and heteroscadasticity.
 
 
 summary(data02$ht2018.july)

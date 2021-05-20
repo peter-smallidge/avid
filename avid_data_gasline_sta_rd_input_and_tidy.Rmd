@@ -99,7 +99,7 @@ avid_tidy_gasline <-
 write_csv(avid_tidy_gasline, "tidy_avid_2018-2020_gasline.csv")
   
 ```
-
+tidy_avid_2018-2020_gasline.csv
 
 
 ```{r}
