@@ -153,6 +153,64 @@ ggsave("figures/avid_growth_cm_by_residual_ba_ha_outside.jpg")
 
 
 
+### Point graph growth cm outside slash wall unfenced
+```{r}
+point01 <- avid01 %>% 
+  filter(inside_slash %in% c("no")) %>% 
+  filter(inside_fence %in% c("no")) 
+# %>% 
+#  filter(species %in% c("sm", "ro"))
+
+avid_ba01_un <- ggplot(data = point01)+
+  geom_point(mapping = aes(x=ba_sq_ha, y = grow_cm, shape = species, size = 1))+
+  theme_bw()+
+ # ylim(0,175)+
+  labs(
+    x = "Residual Basal Area Unfenced Plots (sq m per ha)",
+    y = "Growth Increment 2018-2020 (cm)",
+    title = "AVID Seedling Growth vs. Residual Basal Area",
+    subtitle = "Arnot Forest, avid_ba01_uf, outside walls, file:AVID_plot_attribues.Rmd"
+  ) 
+
+avid_ba01_un
+
+#set_palette(avid_ba01, palette = c("uchicago")) 
+#"uchicago"  ("#00AFBB", "#E7B800", "#FC4E07") ("#440154FF", "#21908CFF" , "#FDE725FF")
+#  palette = c(RdGy)
+
+ggsave("figures/avid_growth_cm_by_residual_ba_ha_outside_unfenced.jpg")
+
+```
+
+
+### Point graph growth cm outside slash wall fenced
+```{r}
+point01 <- avid01 %>% 
+  filter(inside_slash %in% c("no")) %>% 
+  filter(inside_fence %in% c("yes"))
+
+avid_ba01_f <- ggplot(data = point01)+
+  geom_point(mapping = aes(x=ba_sq_ha, y = grow_cm, shape = species, size = 1))+
+  theme_bw()+
+#  ylim(0,175)+
+  labs(
+    x = "Residual Basal Area Fenced Plots (sq m per ha)",
+    y = "Growth Increment 2018-2020 (cm)",
+    title = "AVID Seedling Growth vs. Residual Basal Area",
+    subtitle = "Arnot Forest, avid_ba01_f, outside walls, file:AVID_plot_attribues.Rmd"
+  ) 
+
+avid_ba01_f
+
+#set_palette(avid_ba01, palette = c("uchicago")) 
+#"uchicago"  ("#00AFBB", "#E7B800", "#FC4E07") ("#440154FF", "#21908CFF" , "#FDE725FF")
+#  palette = c(RdGy)
+
+ggsave("figures/avid_growth_cm_by_residual_ba_ha_outside_fenced.jpg")
+
+```
+
+
 
 
 ### Point graph growth inch outside slash wall
