@@ -182,7 +182,7 @@ emmeans(gasline_mod,~ inside_slash * inside_fence * species * year, type = "resp
 #
 #emmip = Estimate Marginal Means Interaction Plot
 #No Fence vs. Yes Fence, and Without vs. With Slash Wall
-### emmip(model name, color ~, xaxis | row_panel + column_panel
+### TEMPLATE emmip(model name, color ~, xaxis | row_panel + column_panel
 
 emmip(gasline_mod, year ~ inside_slash | species + inside_fence, type = "response", CIs=TRUE)
 
