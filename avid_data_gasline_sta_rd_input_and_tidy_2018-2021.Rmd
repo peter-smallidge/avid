@@ -1,0 +1,116 @@
+---
+title: "avid_data_gasline_sta_rd_input_and_tidy_2018to2021"
+author: "Peter Smallidge"
+date: "4/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+<!-- 
+use this code for comments between chunks
+-->
+
+
+```{r, Installing Libraries}
+library(tidyverse)
+library(skimr)        ## install.packages("skimr")
+library(readxl)
+#  dplyr is part of tidyverse -- library(dplyr)
+#
+#in console
+#   str(df)
+#   print(df, n=10)
+#   
+#   to make a df into tibble use x1 <- as_tibble(original_df)  
+#   
+#   dim(df) will show dimensions of the df
+#   
+```
+
+###Read AVID slash wall data
+```{r,read avid slash wall}
+
+# data from Mike's plots at gas line and along Station Road between
+# Wedge and Guise, and along north side of Wedge.
+raw_data_01 <- read_excel("avid_gasline_sta_cleaned_gasline_2018-2020.xlsx", 
+    col_types = c("text", "text", "text", 
+        "text", "text", "text", "text", "numeric", 
+        "numeric", "numeric", "numeric", 
+        "text", "text", "numeric", "numeric", 
+        "numeric", "numeric"))
+
+
+data02 <- raw_data_01 %>% 
+  mutate_at(
+    vars(harvest, inside_slash, inside_fence, plot, species, quad, tag),
+    factor) %>% 
+    mutate(inside_fence = recode(inside_fence, "YES" = "yes")) %>%  #old = new
+  select(!c(site_name, gps,quad,date2019))
+#str(data02)
+#need to change var=inside_fence for YES to yes
+#
+#
+
+# hist(data02$ht2018.july)
+# summary(data02$ht2018.july)
+```
+
+###Make the Data Tidy
+```{r, make data tidy}
+#create df with heights for each year, then bind.
+#use bind_rows(df1, df2) to reaggregate
+
+data2018 <- data02 %>% 
+  select(!c(ht2019.july, ht2020.july)) %>% 
+  rename(ht = ht2018.july) %>% 
+  mutate(
+    year = 2018
+  ) %>% 
+  drop_na(ht) %>% 
+  mutate(ht2018.july = NULL) #this is not needed, the variable name was changed
+
+data2019 <- data02 %>% 
+  select(!c(ht2018.july, ht2020.july)) %>% 
+  rename(ht = ht2019.july) %>% 
+  mutate(
+    year = 2019
+  ) %>% 
+  drop_na(ht) %>% 
+  mutate(ht2019.july = NULL) #this is not needed, the variable name was changed
+
+data2020 <- data02 %>% 
+  select(!c(ht2018.july, ht2019.july)) %>% 
+  rename(ht = ht2020.july) %>% 
+  drop_na(ht) %>% 
+  mutate(
+    year = 2020
+  )
+
+avid_tidy_gasline <- 
+  bind_rows(data2018, data2019, data2020) %>% 
+  mutate_at(
+    vars(year), factor)
+
+
+write_csv(avid_tidy_gasline, "tidy_avid_2018-2020_gasline.csv")
+  
+```
+tidy_avid_2018-2020_gasline.csv
+
+
+```{r}
+avid_tidy_plot_count <- avid_tidy_gasline %>% 
+  filter(year == 2018) %>% 
+  group_by(harvest, inside_slash, plot, species) %>% 
+  summarize(
+    n = n()
+  ) %>% 
+  arrange(harvest, inside_slash, species)
+
+write_csv(avid_tidy_plot_count, "tidy_avid_2018_gasline_sample_sizes.csv")
+```
+
