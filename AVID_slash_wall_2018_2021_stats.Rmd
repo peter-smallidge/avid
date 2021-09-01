@@ -1,0 +1,64 @@
+---
+title: "AVID_slash_wall_2018_2021_stats"
+author: "Peter Smallidge"
+date: "9/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, Installing Libraries}
+library(tidyverse)
+library(skimr)        ## install.packages("skimr")
+library(readr)
+#  dplyr is part of tidyverse -- library(dplyr)
+
+#
+#in console
+#   str(df)
+#   print(df, n=10)
+#   
+#   to make a df into tibble use x1 <- as_tibble(original_df)  
+#   
+#   dim(df) will show dimensions of the df
+```
+
+
+```{r, read import CSV file}
+data_gasline_station <- read_csv("tidy_avid_2018-2021_gasline_station.csv") %>% 
+  rename(ba_sq_ac = basal_area)
+
+```
+
+
+```{r}
+harvest_sum <- data_gasline_station %>% 
+  filter(inside_fence != "yes" & species != "bc") %>% #drop data inside fences, and spp not inside and outside
+  select(!c(inside_fence, tag, plot)) %>%
+  mutate_at(
+    vars(harvest, inside_slash, year, species),
+    factor) %>% 
+  mutate(
+    ht_cm = ht * 2.54,
+    ba_sq_ha = ba_sq_ac * 0.09290304
+  ) %>% 
+  group_by(harvest, species, inside_slash, year) %>% 
+  summarise(
+    #na.rm=FALSE,
+    n = n(),
+    ht_avg = mean(ht),
+    ht_cm_avg = mean(ht_cm),
+    ba_ac_avg = mean(ba_sq_ac),
+    ba_ha_avg = mean(ba_sq_ha),
+    ground_avg = mean(ground_cov_pct),
+    sub_avg = mean(sub_cov_pct),
+    canopy_avg = mean(canopy_cov_pct)
+  )
+
+
+write_csv(harvest_sum, "avid_2018_2021_summary.csv")
+```
+

@@ -36,12 +36,12 @@ library(readxl)
 
 # data from Mike's plots at gas line and along Station Road between
 # Wedge and Guise, and along north side of Wedge.
-raw_data_01 <- read_excel("avid_gasline_sta_cleaned_gasline_2018-2020.xlsx", 
+raw_data_01 <- read_excel("avid_cleaned_gasline_sta_2018-2021_5august2021.xlsx", 
     col_types = c("text", "text", "text", 
-        "text", "text", "text", "text", "numeric", 
+        "text", "numeric", "text", "text", 
         "numeric", "numeric", "numeric", 
-        "text", "text", "numeric", "numeric", 
-        "numeric", "numeric"))
+        "numeric", "text", "text", "numeric", 
+        "text", "numeric", "numeric", "numeric"))
 
 
 data02 <- raw_data_01 %>% 
@@ -49,7 +49,8 @@ data02 <- raw_data_01 %>%
     vars(harvest, inside_slash, inside_fence, plot, species, quad, tag),
     factor) %>% 
     mutate(inside_fence = recode(inside_fence, "YES" = "yes")) %>%  #old = new
-  select(!c(site_name, gps,quad,date2019))
+  select(!c(site_name, gps,quad,date2019)) %>% 
+  rename(ht2018 = ht2018.july, ht2019 = ht2019.july, ht2020 = ht2020.july, ht2021 = ht2021.july)
 #str(data02)
 #need to change var=inside_fence for YES to yes
 #
@@ -59,51 +60,97 @@ data02 <- raw_data_01 %>%
 # summary(data02$ht2018.july)
 ```
 
+```{r, read Katie station road data}
+
+raw_data_katie <- read_excel("avid_station_road_Katie_9august2021.xlsx", 
+    col_types = c("text", "text", "text", 
+        "text", "numeric", "text", "numeric", 
+        "numeric", "text", "numeric", "numeric", 
+        "numeric", "numeric", "text", "numeric", 
+        "numeric", "numeric", "numeric", 
+        "numeric"))
+
+data03 <- raw_data_katie %>% 
+  mutate_at(
+    vars(harvest, inside_slash, inside_fence, plot, species, quad, tag),
+    factor) %>% 
+  select(!c(site_name, gps, quad, Latitude, Longitude)
+  ) %>% 
+  mutate(harvest = recode(harvest, "boot" = "sta_rd")) %>% 
+  mutate(harvest = recode(harvest, "wedge" = "sta_rd")) %>% 
+  rename(ht2018 = ht2018.july, ht2019 = ht2019.july, 
+         ht2020 = ht2020.April.2021, ht2021 = ht2021.august) %>% 
+mutate(
+  ground_cov_pct = ground_cov_pct * 100,
+  sub_cov_pct = sub_cov_pct * 100,
+  canopy_cov_pct = canopy_cov_pct * 100
+)
+
+```
+
+```{r, merge gas line and station road}
+
+data04 <- 
+  bind_rows (data02, data03)
+```
+
+
+
+
 ###Make the Data Tidy
 ```{r, make data tidy}
 #create df with heights for each year, then bind.
 #use bind_rows(df1, df2) to reaggregate
 
-data2018 <- data02 %>% 
-  select(!c(ht2019.july, ht2020.july)) %>% 
-  rename(ht = ht2018.july) %>% 
+data2018 <- data04 %>% 
+  select(!c(ht2019, ht2020, ht2021)) %>% 
+  rename(ht = ht2018) %>%  #new name = old name
   mutate(
     year = 2018
   ) %>% 
   drop_na(ht) %>% 
   mutate(ht2018.july = NULL) #this is not needed, the variable name was changed
 
-data2019 <- data02 %>% 
-  select(!c(ht2018.july, ht2020.july)) %>% 
-  rename(ht = ht2019.july) %>% 
+data2019 <- data04 %>% 
+  select(!c(ht2018, ht2020, ht2021)) %>% 
+  rename(ht = ht2019) %>% 
   mutate(
     year = 2019
   ) %>% 
   drop_na(ht) %>% 
   mutate(ht2019.july = NULL) #this is not needed, the variable name was changed
 
-data2020 <- data02 %>% 
-  select(!c(ht2018.july, ht2019.july)) %>% 
-  rename(ht = ht2020.july) %>% 
+data2020 <- data04 %>% 
+  select(!c(ht2018, ht2019, ht2021)) %>% 
+  rename(ht = ht2020) %>% 
   drop_na(ht) %>% 
   mutate(
     year = 2020
   )
 
-avid_tidy_gasline <- 
-  bind_rows(data2018, data2019, data2020) %>% 
+data2021 <- data04 %>% 
+  select(!c(ht2018, ht2019, ht2020)) %>% 
+  rename(ht = ht2021) %>% 
+  drop_na(ht) %>% 
+  mutate(
+    year = 2021
+  )
+
+
+avid_tidy_gasline_station <- 
+  bind_rows(data2018, data2019, data2020, data2021) %>% 
   mutate_at(
     vars(year), factor)
 
 
-write_csv(avid_tidy_gasline, "tidy_avid_2018-2020_gasline.csv")
+write_csv(avid_tidy_gasline_station, "tidy_avid_2018-2021_gasline_station.csv")
   
 ```
-tidy_avid_2018-2020_gasline.csv
 
 
-```{r}
-avid_tidy_plot_count <- avid_tidy_gasline %>% 
+
+```{r, count of plots}
+avid_tidy_plot_count <- avid_tidy_gasline_station %>% 
   filter(year == 2018) %>% 
   group_by(harvest, inside_slash, plot, species) %>% 
   summarize(
@@ -111,6 +158,6 @@ avid_tidy_plot_count <- avid_tidy_gasline %>%
   ) %>% 
   arrange(harvest, inside_slash, species)
 
-write_csv(avid_tidy_plot_count, "tidy_avid_2018_gasline_sample_sizes.csv")
+write_csv(avid_tidy_plot_count, "tidy_avid_2018_gasline_station_sample_sizes.csv")
 ```
 
